@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>BlinkBot - AI Robot Assistant</title>
+  <style>
+    body {
+      background: #1a1a1a;
+      font-family: sans-serif;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+
+    .robot-face {
+      width: 220px;
+      height: 130px;
+      background: #2a2a2a;
+      border-radius: 25px;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      box-shadow: 0 0 20px #00ff88;
+      position: relative;
+    }
+
+    .eye {
+      width: 60px;
+      height: 60px;
+      background: #003300;
+      border-radius: 50%;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 0 15px #00ff88;
+    }
+
+    .pupil {
+      width: 22px;
+      height: 22px;
+      background: #00ff88;
+      border-radius: 50%;
+      position: absolute;
+      top: 19px;
+      left: 19px;
+      transition: all 0.1s ease;
+      box-shadow: 0 0 8px #00ff88;
+    }
+
+    .eyelid {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 0%;
+      background: #2a2a2a;
+      z-index: 2;
+      animation: blink 5s infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { height: 0%; }
+      48%, 52% { height: 100%; }
+    }
+
+    .chat-box {
+      margin-top: 20px;
+      display: flex;
+      gap: 10px;
+    }
+
+    input {
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+      width: 250px;
+      font-size: 16px;
+      background: #333;
+      color: white;
+    }
+
+    button {
+      padding: 10px 15px;
+      font-size: 16px;
+      border: none;
+      background: #00ff88;
+      color: black;
+      border-radius: 8px;
+      cursor: pointer;
+      box-shadow: 0 0 8px #00ff88;
+    }
+
+    button:hover {
+      background: #00cc66;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="robot-face">
+    <div class="eye">
+      <div class="eyelid"></div>
+      <div class="pupil" id="pupil-left"></div>
+    </div>
+    <div class="eye">
+      <div class="eyelid"></div>
+      <div class="pupil" id="pupil-right"></div>
+    </div>
+  </div>
+
+  <div class="chat-box">
+    <input type="text" id="userInput" placeholder="Ask me something..." />
+    <button onclick="handleQuestion()">Ask</button>
+  </div>
+
+  <script>
+    const leftPupil = document.getElementById('pupil-left');
+    const rightPupil = document.getElementById('pupil-right');
+
+    // Make eyes follow cursor
+    document.addEventListener('mousemove', (e) => {
+      const face = document.querySelector('.robot-face');
+      const rect = face.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      const dx = e.clientX - centerX;
+      const dy = e.clientY - centerY;
+      const moveX = Math.min(Math.max(dx / 15, -10), 10);
+      const moveY = Math.min(Math.max(dy / 15, -10), 10);
+      leftPupil.style.left = 19 + moveX + 'px';
+      leftPupil.style.top = 19 + moveY + 'px';
+      rightPupil.style.left = 19 + moveX + 'px';
+      rightPupil.style.top = 19 + moveY + 'px';
+    });
+
+    // Use OpenRouter or OpenAI API to get a response
+    function getBotResponse(text) {
+      const apiKey = "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"; // Replace with your API key
+
+      return fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model: "openai/gpt-3.5-turbo", // You can change the model here
+          messages: [
+            { role: "system", content: "You are a helpful robot." },
+            { role: "user", content: text }
+          ]
+        })
+      })
+      .then(res => res.json())
+      .then(data => data.choices?.[0]?.message?.content || "Sorry, I didn't understand.");
+    }
+
+    function handleQuestion() {
+      const input = document.getElementById('userInput');
+      const question = input.value.trim();
+      if (!question) return;
+
+      getBotResponse(question).then(response => {
+        const msg = new SpeechSynthesisUtterance(response);
+        msg.pitch = 1.4;
+        msg.rate = 1;
+        speechSynthesis.speak(msg);
+      });
+
+      input.value = '';
+    }
+  </script>
+
+</body>
+</html>
